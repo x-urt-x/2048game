@@ -5,9 +5,6 @@
 #include <time.h>
 #include "windows.h"
 
-#include <chrono>
-#include <thread>
-
 
 using namespace sf;
 
@@ -46,9 +43,9 @@ class Tile : public sf::CircleShape
 
 public:
 	Tile() {}
-	Tile(int x, int y, int r)
+	Tile(int x, int y, int r, int n)
 
-		:CircleShape(r, 6)
+		:CircleShape(r, n)
 	{
 		this->setPosition(x, y);
 		text_num.setCharacterSize(r / 2);
@@ -191,13 +188,11 @@ float* maketrans(float* bases)
 		bases[7] = a;
 	}
 
-	//делим первую строку на 7
 	bases[2] /= bases[0];
 	bases[4] /= bases[0];
 	bases[6] /= bases[0];
 	if (bases[0] != 0)
 	{
-		//вычитаем из второй первую с коэф. после этого в bases[1] будет 0
 		bases[3] -= bases[2] * bases[1];
 		bases[5] -= bases[4] * bases[1];
 		bases[7] -= bases[6] * bases[1];
@@ -226,6 +221,24 @@ void addnewpoints(std::vector<Point>* newpoints, std::vector<Point> oldpoints, f
 	}
 }
 
+Point roundToPrecision(Point p, float precision)  
+{
+	return Point{ roundf(p.x / precision), roundf(p.y / precision) };
+}
+
+int Tp_compx(const void* first, const void* second)
+{
+	return ((Tile_point*)first)->point.x < ((Tile_point*)second)->point.x;
+}
+int Tp_compy(const void* first, const void* second)
+{
+	return ((Tile_point*)first)->point.y < ((Tile_point*)second)->point.y;
+}
+
+int comp(const void* first, const void* second)
+{
+	return *(int*)first > *(int*)second?1:0;
+}
 
 int main()
 {
@@ -245,8 +258,9 @@ int main()
 	msg.setFillColor(Color::Red);
 
 
-	int n = 3;
-	int aa = 2;
+	int n = 2;
+	int aa = 4;
+	float prec=0.01;
 	//std::cin >> n;
 	float ang = 360.0 / (2 * n);
 
@@ -266,10 +280,6 @@ int main()
 	}
 
 	float bases[8];
-	//bases[0] = cos(0);
-	//bases[1] = sin(0);
-	//bases[2] = cos(ang);
-	//bases[3] = sin(ang);
 	bases[0] = 1;
 	bases[1] = 0;
 	bases[2] = 0;
@@ -283,9 +293,9 @@ int main()
 		addnewpoints(&recpoints, points, bases);
 	}
 
+	
 
-	font.loadFromFile("arial.ttf");
-	window.setVerticalSyncEnabled(true);
+
 	std::vector<Tile_point> rectiles;
 	for (int i = 0; i < recpoints.size(); i++)
 	{
@@ -293,7 +303,7 @@ int main()
 			Tile_point
 			{
 				Point{recpoints[i].x,recpoints[i].y},
-				new Tile(recpoints[i].x * 70 + 500, -(recpoints[i].y * 70) + 500, r)
+				new Tile(recpoints[i].x * 70 + 500, -(recpoints[i].y * 70) + 500, r, n*2)
 			}
 		);
 	}
@@ -301,7 +311,7 @@ int main()
 	bases[5] = 0;
 	bases[6] = 0;
 	bases[7] = 1;
-	std::vector<std::vector<Tile_point>> axeslists;
+	std::vector<std::vector<Tile_point>> axislists;
 	for (int k = 0; k < n; k++)
 	{
 		bases[0] = cos((k + 1) * ang * 3.14 / 180);
@@ -315,40 +325,52 @@ int main()
 			tiles.push_back(
 				Tile_point
 				{
-					newbase(trans, rectiles[i].point),
+					roundToPrecision(newbase(trans, rectiles[i].point),prec),
 					rectiles[i].tile
 				}
 			);
 		}
-		axeslists.push_back(tiles);
+		axislists.push_back(tiles);
 	}
-
-
-	bases[0] = 1;
-	bases[1] = 0;
-	bases[2] = 0;
-	bases[3] = 1;
-
-	bases[4] = cos( ang * 3.14 / 180);
-	bases[5] = sin( ang * 3.14 / 180);
-	bases[6] = 1;
-	bases[7] = 0;
-	float* trans = maketrans(bases);
-	std::vector<CircleShape*> clist;
-	for (int i = 0; i < axeslists[0].size(); i++)
+	std::vector<std::vector<std::vector<Tile*>>> matrices;
+	for (int k = 0; k < n; k++)
 	{
-		Point p1 = newbase(trans, axeslists[0][i].point);
-		CircleShape* c = new sf::CircleShape(25);
-		c->setPosition(p1.x * 70 + 500, -(p1.y * 70) + 500);
-		c->setFillColor(Color(255, 0, 0));
-		clist.push_back(c);
+		std::vector<std::vector<Tile*>> matr;
+		qsort(axislists[k].data(), axislists[k].size(), sizeof(axislists[k][0]), Tp_compx);
 	}
+	Tile_point* d = axislists[0].data();
+	int b = Tp_compx(&axislists[0][1].point, &axislists[0][2].point);
+	
+	int m[] = { 1,3,4,1,2,3,4,6,3,1,2,3,4,1,2,3,4 };
+	qsort(&m, 17, sizeof(int), comp);
+	
+	
+	//bases[0] = 1;
+	//bases[1] = 0;
+	//bases[2] = 0;
+	//bases[3] = 1;
 
+	//bases[4] = cos( ang * 3.14 / 180);
+	//bases[5] = sin( ang * 3.14 / 180);
+	//bases[6] = 1;
+	//bases[7] = 0;
+	//float* trans = maketrans(bases);
+	//std::vector<CircleShape*> clist;
+	//for (int i = 0; i < axeslists[0].size(); i++)
+	//{
+	//	Point p1 = newbase(trans, axeslists[0][i].point);
+	//	CircleShape* c = new sf::CircleShape(25);
+	//	c->setPosition(p1.x * 70 + 500, -(p1.y * 70) + 500);
+	//	c->setFillColor(Color(255, 0, 0));
+	//	clist.push_back(c);
+	//}
 	//for (int i = 0; i < rectanpoints.size(); i++)
 	//{
 	//	std::cout << "x: " << rectanpoints[i].x * 100 + 500 << " y: " << -(rectanpoints[i].y * 100) + 500 << std::endl;
 	//}
 
+	font.loadFromFile("arial.ttf");
+	window.setVerticalSyncEnabled(true);
 	while (window.isOpen())
 	{
 		window.clear(Color(100, 100, 100));
@@ -356,10 +378,10 @@ int main()
 		{
 			rectiles[i].tile->setNum(i);
 		}
-		for (int i = 0; i < clist.size(); i++)
-		{
-			window.draw(*clist[i]);
-		}
+		//for (int i = 0; i < clist.size(); i++)
+		//{
+		//	window.draw(*clist[i]);
+		//}
 		window.display();
 		int b;
 		std::cin >> b;
