@@ -226,19 +226,16 @@ Point roundToPrecision(Point p, float precision)
 	return Point{ roundf(p.x / precision), roundf(p.y / precision) };
 }
 
-int Tp_compx(const void* first, const void* second)
-{
-	return ((Tile_point*)first)->point.x < ((Tile_point*)second)->point.x;
-}
-int Tp_compy(const void* first, const void* second)
-{
-	return ((Tile_point*)first)->point.y < ((Tile_point*)second)->point.y;
+bool Tp_compareByX(const Tile_point& a, const Tile_point& b) {
+	return a.point.x < b.point.x;
 }
 
-int comp(const void* first, const void* second)
-{
-	return *(int*)first > *(int*)second?1:0;
+bool Tp_compareByY(const Tile_point& a, const Tile_point& b) {
+	return a.point.y < b.point.y;
 }
+
+
+
 
 int main()
 {
@@ -258,9 +255,9 @@ int main()
 	msg.setFillColor(Color::Red);
 
 
-	int n = 2;
+	int n = 3;
 	int aa = 4;
-	float prec=0.01;
+	float prec=1;
 	//std::cin >> n;
 	float ang = 360.0 / (2 * n);
 
@@ -286,6 +283,10 @@ int main()
 	bases[3] = 1;
 	for (int i = 0; i < n; i++)
 	{
+		//bases[4] = cos((i + 1.5) * ang * 3.14 / 180);
+		//bases[5] = sin((i + 1.5) * ang * 3.14 / 180);
+		//bases[6] = cos((i + 0.5) * ang * 3.14 / 180);
+		//bases[7] = sin((i + 0.5) * ang * 3.14 / 180);
 		bases[4] = cos((i + 1) * ang * 3.14 / 180);
 		bases[5] = sin((i + 1) * ang * 3.14 / 180);
 		bases[6] = cos(i * ang * 3.14 / 180);
@@ -314,6 +315,10 @@ int main()
 	std::vector<std::vector<Tile_point>> axislists;
 	for (int k = 0; k < n; k++)
 	{
+		//bases[0] = cos((k + 1.5) * ang * 3.14 / 180);
+		//bases[1] = sin((k + 1.5) * ang * 3.14 / 180);
+		//bases[2] = cos((k + 0.5) * ang * 3.14 / 180);
+		//bases[3] = sin((k + 0.5) * ang * 3.14 / 180);
 		bases[0] = cos((k + 1) * ang * 3.14 / 180);
 		bases[1] = sin((k + 1) * ang * 3.14 / 180);
 		bases[2] = cos(k * ang * 3.14 / 180);
@@ -325,49 +330,64 @@ int main()
 			tiles.push_back(
 				Tile_point
 				{
-					roundToPrecision(newbase(trans, rectiles[i].point),prec),
+					//roundToPrecision(newbase(trans, rectiles[i].point),prec),
+					newbase(trans, rectiles[i].point),
 					rectiles[i].tile
 				}
 			);
 		}
 		axislists.push_back(tiles);
 	}
-	std::vector<std::vector<std::vector<Tile*>>> matrices;
+	/*std::vector<std::vector<std::vector<Tile*>>> matrices;
 	for (int k = 0; k < n; k++)
 	{
 		std::vector<std::vector<Tile*>> matr;
-		qsort(axislists[k].data(), axislists[k].size(), sizeof(axislists[k][0]), Tp_compx);
-	}
-	Tile_point* d = axislists[0].data();
-	int b = Tp_compx(&axislists[0][1].point, &axislists[0][2].point);
-	
-	int m[] = { 1,3,4,1,2,3,4,6,3,1,2,3,4,1,2,3,4 };
-	qsort(&m, 17, sizeof(int), comp);
-	
-	
-	//bases[0] = 1;
-	//bases[1] = 0;
-	//bases[2] = 0;
-	//bases[3] = 1;
+		std::sort(axislists[k].begin(), axislists[k].end(),Tp_compareByY);
+		for (int i = 0; i < axislists[k].size();)
+		{
+			std::vector<Tile_point> Tp_row;
+			float y = axislists[k][i].point.y;
+			while (i < axislists[k].size() && y == axislists[k][i].point.y)
+			{
+				Tp_row.push_back(axislists[k][i]);
+				i++;
+			}
+			std::sort(Tp_row.begin(), Tp_row.end(), Tp_compareByX);
+			std::vector<Tile*> row;
+			for (int j = 0; j < Tp_row.size(); j++)
+			{
+				row.push_back(Tp_row[j].tile);
+			}
+			matr.push_back(row);
+		}
+		matrices.push_back(matr);
+	}*/
 
-	//bases[4] = cos( ang * 3.14 / 180);
-	//bases[5] = sin( ang * 3.14 / 180);
-	//bases[6] = 1;
-	//bases[7] = 0;
-	//float* trans = maketrans(bases);
-	//std::vector<CircleShape*> clist;
-	//for (int i = 0; i < axeslists[0].size(); i++)
-	//{
-	//	Point p1 = newbase(trans, axeslists[0][i].point);
-	//	CircleShape* c = new sf::CircleShape(25);
-	//	c->setPosition(p1.x * 70 + 500, -(p1.y * 70) + 500);
-	//	c->setFillColor(Color(255, 0, 0));
-	//	clist.push_back(c);
-	//}
-	//for (int i = 0; i < rectanpoints.size(); i++)
-	//{
-	//	std::cout << "x: " << rectanpoints[i].x * 100 + 500 << " y: " << -(rectanpoints[i].y * 100) + 500 << std::endl;
-	//}
+	
+	
+	
+	bases[0] = 1;
+	bases[1] = 0;
+	bases[2] = 0;
+	bases[3] = 1;
+
+	int k = 1;
+	bases[4] = cos((k + 1) * ang * 3.14 / 180);
+	bases[5] = sin((k + 1) * ang * 3.14 / 180);
+	bases[6] = cos(k * ang * 3.14 / 180);
+	bases[7] = sin(k * ang * 3.14 / 180);
+	float* trans = maketrans(bases);
+	std::vector<CircleShape*> clist;
+	for (int i = 0; i < axislists[0].size(); i++)
+	{
+		Point p1 = newbase(trans, axislists[k][i].point);
+		CircleShape* c = new sf::CircleShape(25);
+		c->setPosition(p1.x * 70 + 500, -(p1.y * 70) + 500);
+		c->setFillColor(Color(255, 0, 0));
+		clist.push_back(c);
+	}
+
+
 
 	font.loadFromFile("arial.ttf");
 	window.setVerticalSyncEnabled(true);
@@ -378,13 +398,27 @@ int main()
 		{
 			rectiles[i].tile->setNum(i);
 		}
-		//for (int i = 0; i < clist.size(); i++)
-		//{
-		//	window.draw(*clist[i]);
-		//}
+		for (int i = 0; i < clist.size(); i++)
+		{
+			window.draw(*clist[i]);
+		}
+		
+		Event event;
+		while (window.pollEvent(event))
+		{
+			switch (event.type)
+			{
+				// закрытие окна
+			case sf::Event::Closed:
+				window.close();
+				break;
+			case sf::Event::KeyPressed:
+				break;
+			default:
+				break;
+			}
+		}
 		window.display();
-		int b;
-		std::cin >> b;
 	}
 	return 0;
 }
