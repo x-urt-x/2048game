@@ -12,17 +12,19 @@ using namespace sf;
 Font font;
 const float prec = 0.05;
 const int axis = 5;
-const int w_x = 1200, w_y = 1200;
+const int w_x = 1400, w_y = 1400;
 const int spawn_s_q = 4;
 const int spawn_q = 2;
 const int spawn_r = 3;
 const int a = 4;
 const int base = 2;
-const int max_degree = 16;
+const int max_degree = 99;
 //const int r = (w_x / 2 - w_x / 10) / (a * 2 - 1);
-const int r = 25;
+const int r = 35;
 const float ang = 360.0 / (2 * axis);
 int score = 0;
+const float Pi = 3.1415;
+
 const Color tile_col[] =
 {
 	Color(97, 77, 60),
@@ -39,9 +41,26 @@ const Color tile_col[] =
 	Color(244,198,42)
 };
 
+/*
+const Color tile_col[] =
+{
+	Color(10,10,10),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+	Color(12,77,85),
+};
+*/
 RenderWindow window(VideoMode(w_x, w_y), "2048 game");
 
-class Tile : public sf::CircleShape
+class Tile : protected sf::CircleShape
 {
 
 public:
@@ -68,12 +87,15 @@ public:
 	void upNum()
 	{
 		text_num.setString(std::to_string(num));
+
 		if (num == 0)
 			text_num.setFillColor(tile_col[0]);
-		else if (num <= base * 2)
+		else if (num < base * 3)
 			text_num.setFillColor(Color(121, 112, 100));
 		else
 			text_num.setFillColor(Color::White);
+
+		//text_num.setFillColor(Color::White);
 		this->setFillColor(tile_col[int(num == 0 ? 0 : (log(num) / log(2) > max_degree ? max_degree : log(num) / log(2)))]);
 		window.draw(*this);
 		window.draw(text_num);
@@ -168,7 +190,7 @@ struct Point
 
 struct Tile_point
 {
-	Point point;
+	Point pointr, pointl;
 	Tile* tile;
 };
 
@@ -214,26 +236,13 @@ Point newbase(float trans[], Point oldpoint)
 	return newpoint;
 }
 
-void addnewpoints(std::vector<Point>* newpoints, std::vector<Point> oldpoints, float* bases)
-{
-	float* trans = maketrans(bases);
-	for (int i = 0; i < oldpoints.size(); i++)
-	{
-		newpoints->push_back(newbase(trans, oldpoints[i]));
-	}
-}
-
 Point roundToPrecision(Point p, float precision)
 {
 	return Point{ roundf(p.x / precision), roundf(p.y / precision) };
 }
 
 bool Tp_compareByX(const Tile_point& a, const Tile_point& b) {
-	return a.point.x < b.point.x;
-}
-
-bool Tp_compareByY(const Tile_point& a, const Tile_point& b) {
-	return a.point.y < b.point.y;
+	//return a.point.x < b.point.x;
 }
 
 
@@ -256,37 +265,6 @@ int main()
 	msg.setCharacterSize(w_y / 5);
 	msg.setFillColor(Color::Red);
 
-	//std::vector<Point> points, recpoints;
-	//for (int i = 0; i < a; i++)
-	//{
-	//	for (int j = 1; j < a - i; j++)
-	//	{
-	//		Point p = { i,j };
-	//		points.push_back(p);
-	//		Point p1 = { -i,-j };
-	//		points.push_back(p1);
-	//	}
-	//}
-
-	float bases[8];
-	//bases[0] = 1;
-	//bases[1] = 0;
-	//bases[2] = 0;
-	//bases[3] = 1;
-	//for (int i = 0; i < axis; i++)
-	//{
-	//	//bases[4] = cos((i + 1.5) * ang * 3.14 / 180);
-	//	//bases[5] = sin((i + 1.5) * ang * 3.14 / 180);
-	//	//bases[6] = cos((i + 0.5) * ang * 3.14 / 180);
-	//	//bases[7] = sin((i + 0.5) * ang * 3.14 / 180);
-	//	bases[4] = cos((i + 1) * ang * 3.14 / 180);
-	//	bases[5] = sin((i + 1) * ang * 3.14 / 180);
-	//	bases[6] = cos(i * ang * 3.14 / 180);
-	//	bases[7] = sin(i * ang * 3.14 / 180);
-	//	addnewpoints(&recpoints, points, bases);
-	//}
-
-
 	std::vector<Point> points;
 	points.push_back(Point{ 0,0 });
 	for (int i = 1; i < a; i++)
@@ -299,7 +277,7 @@ int main()
 			points.push_back(p1);
 		}
 	}
-	//float bases[8];
+	float bases[8];
 	bases[4] = 1;
 	bases[5] = 0;
 	bases[6] = 0;
@@ -307,10 +285,10 @@ int main()
 	std::vector<float*> axistrans;
 	for (int k = 0; k < axis; k++)
 	{
-		bases[0] = cos((k + 1) * ang * 3.14 / 180);
-		bases[1] = sin((k + 1) * ang * 3.14 / 180);
-		bases[2] = cos(k * ang * 3.14 / 180);
-		bases[3] = sin(k * ang * 3.14 / 180);
+		bases[0] = cos((k + 1) * ang * Pi / 180);
+		bases[1] = sin((k + 1) * ang * Pi / 180);
+		bases[2] = cos(k * ang * Pi / 180);
+		bases[3] = sin(k * ang * Pi / 180);
 		axistrans.push_back(maketrans(bases));
 	}
 
@@ -326,34 +304,47 @@ int main()
 		TP_matrices.push_back(TP_matr);
 	}
 
+	int num1 = 4;
+
 	bases[0] = 1;
 	bases[1] = 0;
 	bases[2] = 0;
 	bases[3] = 1;
 	for (int k = 0; k < axis; k++)
 	{
-		bases[4] = cos((k + 1) * ang * 3.14 / 180);
-		bases[5] = sin((k + 1) * ang * 3.14 / 180);
-		bases[6] = cos(k * ang * 3.14 / 180);
-		bases[7] = sin(k * ang * 3.14 / 180);
+		bases[4] = cos((k + 1) * ang * Pi/ 180);
+		bases[5] = sin((k + 1) * ang * Pi / 180);
+		bases[6] = cos(k * ang * Pi / 180);
+		bases[7] = sin(k * ang * Pi / 180);
 		float* trans = maketrans(bases);
-		for (int i = (k == 0 ? 0 : 1); i < points.size(); i++)
+		for (int i = (k == 0 ? 0 : 1); i < points.size(); i++) //points[0] - {0,0} используем только один раз
 		{
-			Point recpoint = newbase(trans, points[i]);
+			Point recpoint = newbase(trans, points[i]); //преобразование в прямоугольные координаты для точек в первой четверти текущего базиса k 
 			Tile_point current
 			{
-				points[i],
-				new Tile(int(recpoint.x * 70 + w_x / 2 - r), int(-(recpoint.y * 70) + w_y / 2 - r), r, axis * 2)
+				recpoint,points[i],
+				new Tile(int(recpoint.x * 100 + w_x / 2 - r), int(-(recpoint.y * 100) + w_y / 2 - r), r, axis * 2)
 			};
 			for (int j = 0; j < axis; j++) //заполнение одного сектора во всех матрицах
 			{
-				if (j == k)
+				if (j == k) //пишем в базовую, преобразование координат не нужно
 				{
-					TP_matrices[j][a - 1 + current.point.y].push_back(current);
+					TP_matrices[j][a - 1 + current.pointl.y].push_back(current);
 					continue;
 				}
-				Point newpoint = newbase(axistrans[j], recpoint);
-				TP_matrices[j][a - 1 + current.point.x].push_back(Tile_point{ newpoint, current.tile });
+				Point newpoint = newbase(axistrans[j], recpoint); //преобразование из прямоугольных координат в координаты текущего базиса j
+				int y;
+
+				if (j == (k - 1 + axis) % axis) //текущая матрица для записи сектора идет следующий после базовой, учитывается только координата х
+				{
+					y = a - 1 + (k == 0 ? 1 : -1) * current.pointl.x; //при заполнении последний матрицы с первого сектора, в этом случае следующий сектор для базового когда мы будем заполнять последнюю матрицу будет с отрицательными координатами 
+				}
+				else
+				{
+					y = a - 1 + (j < k ? -1 : 1) * (current.pointl.x + current.pointl.y);
+				}
+				current.pointl = newpoint;
+				TP_matrices[j][y].push_back(current);
 			}
 		}
 	}
@@ -379,116 +370,33 @@ int main()
 
 
 
-
-
-
-
-
-	//std::vector<Tile_point> rectiles;
-	//rectiles.push_back(Tile_point{ Point{0,0},new Tile(int(w_x / 2 - r), int(w_y / 2 - r), r, axis * 2) }); //центральное поле
-	//for (int i = 0; i < recpoints.size(); i++)
-	//{
-	//	rectiles.push_back(
-	//		Tile_point
-	//		{
-	//			Point{recpoints[i].x,recpoints[i].y},
-	//			new Tile(int(recpoints[i].x * 70 + w_x / 2 - r), int(-(recpoints[i].y * 70) + w_y / 2 - r), r, axis * 2)
-	//		}
-	//	);
-	//}
-
-	//std::vector<std::vector<Tile_point>> axislists;
-	//for (int k = 0; k < axis; k++)
-	//{
-	//	//bases[0] = cos((k + 1.5) * ang * 3.14 / 180);
-	//	//bases[1] = sin((k + 1.5) * ang * 3.14 / 180);
-	//	//bases[2] = cos((k + 0.5) * ang * 3.14 / 180);
-	//	//bases[3] = sin((k + 0.5) * ang * 3.14 / 180);
-	//	bases[0] = cos((k + 1) * ang * 3.14 / 180);
-	//	bases[1] = sin((k + 1) * ang * 3.14 / 180);
-	//	bases[2] = cos(k * ang * 3.14 / 180);
-	//	bases[3] = sin(k * ang * 3.14 / 180);
-	//	bases[4] = 1;
-	//	bases[5] = 0;
-	//	bases[6] = 0;
-	//	bases[7] = 1;
-	//	float* trans = maketrans(bases);
-	//	std::vector<Tile_point> tiles;
-	//	for (int i = 0; i < rectiles.size(); i++)
-	//	{
-	//		tiles.push_back(
-	//			Tile_point
-	//			{
-	//				roundToPrecision(newbase(trans, rectiles[i].point),prec),
-	//				//newbase(trans, rectiles[i].point),
-	//				rectiles[i].tile
-	//			}
-	//		);
-	//	}
-	//	axislists.push_back(tiles);
-	//}
-	//std::vector<std::vector<std::vector<Tile*>>> matrices;
-	//for (int k = 0; k < axis; k++)
-	//{
-	//	std::vector<std::vector<Tile*>> matr;
-	//	std::sort(axislists[k].begin(), axislists[k].end(), Tp_compareByY);
-	//	for (int i = 0; i < axislists[k].size();)
-	//	{
-	//		std::vector<Tile_point> Tp_row;
-	//		float y = axislists[k][i].point.y;
-	//		while (i < axislists[k].size() && y == axislists[k][i].point.y)
-	//		{
-	//			Tp_row.push_back(axislists[k][i]);
-	//			i++;
-	//		}
-	//		std::sort(Tp_row.begin(), Tp_row.end(), Tp_compareByX);
-	//		std::vector<Tile*> row;
-	//		for (int j = 0; j < Tp_row.size(); j++)
-	//		{
-	//			row.push_back(Tp_row[j].tile);
-	//		}
-	//		matr.push_back(row);
-	//	}
-	//	matrices.push_back(matr);
-	//}
-
-
-
-
-
-	//bases[0] = 1;
-	//bases[1] = 0;
-	//bases[2] = 0;
-	//bases[3] = 1;
-
-	//int k = 1;
-	//bases[4] = cos((k + 1) * ang * 3.14 / 180);
-	//bases[5] = sin((k + 1) * ang * 3.14 / 180);
-	//bases[6] = cos(k * ang * 3.14 / 180);
-	//bases[7] = sin(k * ang * 3.14 / 180);
-	//float* trans = maketrans(bases);
-	//std::vector<CircleShape*> clist;
-	//for (int i = 0; i < axislists[0].size(); i++)
-	//{
-	//	Point p1 = newbase(trans, axislists[k][i].point);
-	//	CircleShape* c = new sf::CircleShape(25);
-	//	c->setPosition(p1.x * 70 + 500, -(p1.y * 70) + 500);
-	//	c->setFillColor(Color(255, 0, 0));
-	//	clist.push_back(c);
-	//}
-
-
 	font.loadFromFile("arial.ttf");
 	window.setVerticalSyncEnabled(true);
 
 	for (int i = 0; i < spawn_s_q; i++)
 	{
-//		newTile(matrices[0]);
+		//newTile(matrices[0]);
 	}
+
+
+
+	for (int i = 0; i < matrices[num1].size(); i++)
+	{
+		for (int j = 0; j < matrices[num1][i].size(); j++)
+		{
+			if(matrices[num1][i][j]->getNum() == 0)
+				matrices[num1][i][j]->setNum(pow(2, i));
+		}
+	}
+
+	//matrices[0][0][0]->setNum(4);
+	//matrices[0][0][1]->setNum(8);
+	//matrices[0][1][0]->setNum(16);
 
 	while (window.isOpen())
 	{
 		window.clear(Color(100, 100, 100));
+		//matrices[0][3][3]->setNum(4);
 		for (int i = 0; i < matrices[0].size(); i++)
 		{
 			for (int j = 0; j < matrices[0][i].size(); j++)
@@ -499,7 +407,7 @@ int main()
 					lose = false;
 					if (moved != 0 && moved <= spawn_q)
 					{
-						newTile(matrices[0]);
+						//newTile(matrices[0]);
 						moved++;
 					}
 				}
@@ -555,7 +463,8 @@ int main()
 					break;
 				}
 				int key = event.key.code - 26;
-				moved = move(matrices[key / 2], key % 2 == 0 ? -1 : 1, 0);
+				if (key >= 0 && key < axis)
+					moved = move(matrices[key / 2], key % 2 == 0 ? -1 : 1, 0);
 			}
 			break;
 			default:
