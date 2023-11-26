@@ -339,33 +339,39 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 		float* trans = maketrans(bases);
 		for (int i = (k == 0 ? 0 : 1); i < points.size(); i++) //points[0] - {0,0} используем только один раз
 		{
-			Point recpoint = newbase(trans, points[i]); //преобразование в прямоугольные координаты для точек в первой четверти текущего базиса k 
+			//преобразование в прямоугольные координаты для точек в первой четверти текущего базиса k
+			Point recpoint = newbase(trans, points[i]);
+			
 			Tile_point current
 			{
-				recpoint,points[i],
-				new Tile(
-					int(  recpoint.x * (StartParams.r + StartParams.range) * 2   + StartParams.w_x / 2 - StartParams.r),
-					int(-(recpoint.y * (StartParams.r + StartParams.range) * 2 ) + StartParams.w_y / 2 - StartParams.r))  // исправть ---------------------------------------------
+				recpoint, points[i],
+				new Tile(int(recpoint.x * StartParams.range + StartParams.w_x / 2 - StartParams.r), int(-(recpoint.y * StartParams.range) + StartParams.w_y / 2 - StartParams.r))
 			};
-			for (int j = 0; j < StartParams.axis; j++) //заполнение одного сектора во всех матрицах
+
+			//заполнение одного сектора во всех матрицах
+			for (int j = 0; j < StartParams.axis; j++) 
 			{
 				if (j == k) //пишем в базовую, преобразование координат не нужно
 				{
-					matrices[j][StartParams.a - 1 + current.pointl.y].push_back(current);
-					continue;
-				}
-				Point newpoint = newbase(axistrans[j], recpoint); //преобразование из прямоугольных координат в координаты текущего базиса j
-				int y;
-
-				if (j == (k - 1 + StartParams.axis) % StartParams.axis) //текущая матрица для записи сектора идет следующий после базовой, учитывается только координата х
-				{
-					y = StartParams.a - 1 + (k == 0 ? 1 : -1) * current.pointl.x; //при заполнении последний матрицы с первого сектора, в этом случае следующий сектор для базового когда мы будем заполнять последнюю матрицу будет с отрицательными координатами 
+					matrices[j][StartParams.a - 1 + points[i].y].push_back(current);
 				}
 				else
 				{
-					y = StartParams.a - 1 + (j < k ? -1 : 1) * (current.pointl.x + current.pointl.y);
+					current.pointl = newbase(axistrans[j], recpoint); //преобразование из прямоугольных координат в координаты текущего базиса j
+
+					//вычисляем ряд
+					int row;
+					if (j == (k - 1 + StartParams.axis) % StartParams.axis) //текущая матрица для записи сектора идет следующий после базовой, учитывается только координата х
+					{
+						row = StartParams.a - 1 + (k == 0 ? 1 : -1) * points[i].x; //при заполнении последний матрицы с первого сектора, в этом случае следующий сектор для базового когда мы будем заполнять последнюю матрицу будет с отрицательными координатами 
+					}
+					else
+					{
+						row = StartParams.a - 1 + (j < k ? -1 : 1) * (points[i].x + points[i].y);
+					}
+
+					matrices[j][row].push_back(current);
 				}
-				matrices[j][y].push_back(Tile_point{ current.pointr,newpoint,current.tile });
 			}
 		}
 	}
