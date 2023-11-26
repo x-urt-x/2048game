@@ -62,14 +62,19 @@ void Game::Run()
 	{
 		newTile(matrices[0]);
 	}
+
+	window.clear(sf::Color(100, 100, 100));
+	std::vector<Tile_point*> zeros1;
+	Render_GetZeros(zeros1);
+
 	while (window.isOpen())
 	{
-		window.clear(sf::Color(100, 100, 100));
-
-		std::vector<Tile_point*> zeros;
-		Render_GetZeros(zeros);
 		if (moved != 0)
 		{
+			window.clear(sf::Color(100, 100, 100));
+
+			std::vector<Tile_point*> zeros;
+			Render_GetZeros(zeros);
 			for (int i = 0; i < StartParams.spawn_q && i < zeros.size(); i++)
 			{
 				newTile(matrices[0]);
@@ -264,6 +269,9 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 	const float Pi = 3.1415926535;
 	std::vector<Point> points;
 	points.push_back(Point{ 0,0 });
+
+	//создание шаблона для одного сектора
+	//координаты точек только науральные числа.
 	for (int i = 1; i < StartParams.a; i++)
 	{
 		for (int j = 0; j < StartParams.a - i; j++)
@@ -274,6 +282,19 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 			points.push_back(p1);
 		}
 	}
+
+	//расчет колличества рядов при произвольной конфигурации шаблона сектора. исправить --------------------------
+	//int rows = 0;
+	//for (int i = 0; i < std::size(points); i++)
+	//{
+	//	if (points[i].y + points[i].x > rows)
+	//		rows = points[i].y + points[i].x;
+	//}
+	//rows *= 2;
+	//rows += 1;
+
+
+	//создание матрицы перехода из прямоугольного базиса в проивольный
 	float bases[8];
 	std::vector<float*> axistrans;
 	for (int k = 0; k < StartParams.axis; k++)
@@ -288,12 +309,14 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 		bases[3] = sin(k * ang * Pi / 180);
 		axistrans.push_back(maketrans(bases));
 	}
-
+	
+	//самый главный вектор. в нем будут все матрицы сдвига
 	std::vector<std::vector<std::vector<Tile_point>>> matrices;
 	for (int k = 0; k < StartParams.axis; k++)
 	{
 		std::vector<std::vector<Tile_point>> matr;
-		for (int i = 0; i < 2 * StartParams.a - 1; i++) //колличесво рядов паралельных сдвигов равно диаметру -----------------------------------------------
+		//for (int i = 0; i < rows; i++)
+		for (int i = 0; i < 2 * StartParams.a - 1; i++) //колличесво рядов паралельных сдвигов равно диаметру
 		{
 			std::vector<Tile_point> row;
 			matr.push_back(row);
@@ -320,7 +343,9 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 			Tile_point current
 			{
 				recpoint,points[i],
-				new Tile(int(recpoint.x * 100 + StartParams.w_x / 2 - StartParams.r), int(-(recpoint.y * 100) + StartParams.w_y / 2 - StartParams.r))  // исправть ---------------------------------------------
+				new Tile(
+					int(  recpoint.x * (StartParams.r + StartParams.range) * 2   + StartParams.w_x / 2 - StartParams.r),
+					int(-(recpoint.y * (StartParams.r + StartParams.range) * 2 ) + StartParams.w_y / 2 - StartParams.r))  // исправть ---------------------------------------------
 			};
 			for (int j = 0; j < StartParams.axis; j++) //заполнение одного сектора во всех матрицах
 			{
