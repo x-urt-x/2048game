@@ -16,14 +16,22 @@ const sf::Color tile_col[] =
     sf::Color(244, 198, 42)
 };
 
+
+Tile::Tile()
+{
+}
+
+Tile::Tile(Point point) :Tile(point.x, point.y)
+{
+}
+
 Tile::Tile(int x, int y)
 {
     body.setPointCount(n);
-    body.setPosition(x, y);
     body.setRadius(r);
     text_num.setCharacterSize(r / 2);
-    text_num.setPosition(x + r * 0.866 - r / 4, y + r / 2);
     text_num.setFont(font);
+    setPos(x, y);
     num = 0;
     upNum();
 }
@@ -32,6 +40,17 @@ void Tile::setNum(int numToSet)
 {
     num = numToSet;
     upNum();
+}
+
+void Tile::setPos(int x, int y)
+{
+    body.setPosition(x, y);
+    text_num.setPosition(x + r * 0.866 - r / 4, y + r / 2);
+}
+
+void Tile::setPos(Point point)
+{
+    setPos(point.x, point.y);
 }
 
 int Tile::getNum()
@@ -60,6 +79,18 @@ void Tile::Draw(sf::RenderWindow& window)
 {
     window.draw(body);
     window.draw(text_num);
+}
+
+void Tile::DrawTexture(sf::RenderTexture* texture)
+{
+    //sf::Image img;
+    //img.create(400, 400);
+    //const sf::Texture& tx = body.getTextureRect();
+    //texture->update(tx, 1000, 1000);
+    //
+    //sf::Texture::bind(texture);
+    texture->draw(body);
+    texture->draw(text_num);
 }
 
 void Tile::setStaticParams(sf::Font _font, const StartParamsStruct& StartParams)
