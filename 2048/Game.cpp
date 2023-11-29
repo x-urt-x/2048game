@@ -61,8 +61,10 @@ void Game::Run()
 	{
 		newTile(matrices[0]);
 	}
-	matrices[0][0][2].tile->setNum(2);
-	window.clear(sf::Color(100, 100, 100));
+	//matrices[0][0][2].tile->setNum(2);
+	//matrices[0][0][4].tile->setNum(2);
+	//matrices[0][4][2].tile->setNum(2);
+	//window.clear(sf::Color(100, 100, 100));
 	std::vector<Tile_point*> zeros1;
 	Render_GetZeros(zeros1);
 
@@ -267,126 +269,84 @@ Point Game::newbase(float trans[], Point oldpoint)
 
 bool Game::move(int matrInd, int dir, bool v)
 {
-	sf::RenderTexture texture;
-	texture.create(1400, 1400);
-	bool stop=true;
-	bool moved = false;
-	bool* isEnd = new bool[matrices[matrInd].size()];
-	for (int i = 0; i < matrices[matrInd].size(); i++)
-		isEnd[i] = false;
-	bool allEnd = false;
-	bool* canMove = new bool[matrices[matrInd].size()];
-	for (int i = 0; i < matrices[matrInd].size(); i++)
-		canMove[i] = false;
-	std::vector<std::thread> threads;
-	//for (int i = 0; i < matrices.size(); i++)
-	for (int i = 0; i < matrices[matrInd].size(); i++)
-	{
-		threads.emplace_back(&Game::moveRow, this, matrInd, i, dir, v, isEnd + i, canMove + i, &texture, &stop);
-	}
-	while (!allEnd)
-	{
-		//texture.clear(sf::Color(0, 0, 0, 0));
-		// сигнальные конструкции нормально не работали
-		stop = false; 
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / StartParams.stepsPerSec));
-		stop = true;
-		//sf::CircleShape sc(40, 4);
-		//texture.draw(sc);
-		texture.display();
-		sf::Sprite sp(texture.getTexture());
-		window.draw(sp);
-		window.display();
-		allEnd = true;
-		for (int i = 0; i < matrices[matrInd].size(); i++)
-		{
-			allEnd &= isEnd[i];
-		}
-	}
 
-	//поидеи тут все потоки уже должны завершится, но если их не ждать то при выходе из этого метода в деструккторе вектора с потоками возникает ошибка
-	for (int i = 0; i < threads.size(); i++)
-	{
-		threads[i].join();
-	}
-
-	for (int i = 0; i < 1; i++)
-	{
-		moved |= canMove[i];
-	}
-	delete[] isEnd;
-	delete[] canMove;
-	return true;
-}
-
-void Game::moveRow(int mi, int ri, int dir, bool v, bool* isEnd, bool* canMove, sf::RenderTexture* texture, bool* stop)
-{
-	bool done = true;
+	bool canMove = false;
 	std::vector <AnimTile> toAnim; //сюда записываем данные для последующей анимации и изменения элементов
-	for (int i = (dir > 0 ? 0 : matrices[mi][ri].size() - 1); (dir < 0 ? i >= 0 : i < matrices[mi][ri].size()); i + dir) //прямой или обратный перебор в зависимости от dir
+	for (int rowInd = 0; rowInd < matrices[matrInd].size(); rowInd++)
 	{
-
-		int num = matrices[mi][ri][i].tile->getNum();
-		//если текущщий элемент пустой то пытаемся туда что то притянуть
-		if (num == 0)
+		bool done = true;
+		for (int i = (dir > 0 ? 0 : matrices[matrInd][rowInd].size() - 1); (dir < 0 ? i >= 0 : i < matrices[matrInd][rowInd].size()); i += dir) //прямой или обратный перебор в зависимости от dir
 		{
-			for (int j = i; (dir < 0 ? j >= 0 : j < matrices[mi][ri].size()); j += dir)
+
+			int num = matrices[matrInd][rowInd][i].tile->getNum();
+			//если текущий элемент пустой то пытаемся туда что то притянуть
+			if (num == 0)
 			{
-				if (matrices[mi][ri][j].tile->getNum() != 0)
+				for (int j = i; (dir < 0 ? j >= 0 : j < matrices[matrInd][rowInd].size()); j += dir)
 				{
-					done = false;
-					*canMove = true; //если v==false то это флаг что сдвиг был, если v==true то это только возможность сдвига
-					if (!v)
+					if (matrices[matrInd][rowInd][j].tile->getNum() != 0)
 					{
-						num = matrices[mi][ri][j].tile->getNum();
-						toAnim.push_back(AnimTile(matrices[mi][ri], j, i, dir, num, false, StartParams.stepsPerSec / StartParams.speed));
-						matrices[mi][ri][j].tile->setNum(0); //элемент который мы притянули сразу ставим 0 
-					}
-					else // при v==true достаточно чтобы хоть один сдвиг был возможен
-					{
-						*isEnd = true;
-						return;
+						canMove = true; //флаг что сдвиг был
+						if (!v)
+						{
+							done = false;
+							num = matrices[matrInd][rowInd][j].tile->getNum();
+							matrices[matrInd][rowInd][i].tile->setNum(num);
+							toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, false, StartParams.stepsPerSec / StartParams.speed));
+							matrices[matrInd][rowInd][j].tile->setNum(0); //элемент который мы притянули сразу ставим 0 
+							break;
+						}
+						else // при v==true достаточно чтобы хоть один сдвиг был возможен
+						{
+							return true;
+						}
 					}
 				}
-			}
-			//текщий элемент 0 и ничего не притянули значит смещение завершено
-			if (done)
-			{
-				break;
-			}
-		}
-		//если в элементе что то было или мы туда что то притянули то пытаемя притянуть такой же
-		for (int j = i; (dir < 0 ? j >= 0 : j < matrices[mi][ri].size()); j += dir)
-		{
-			if (matrices[mi][ri][j].tile->getNum() == num)
-			{
-				*canMove = true;
-				if (!v)
+				//текщий элемент 0 и ничего не притянули значит смещение завершено
+				if (done)
 				{
-					toAnim.push_back(AnimTile(matrices[mi][ri], j, i, dir, num, true, StartParams.stepsPerSec / StartParams.speed));
-					matrices[mi][ri][j].tile->setNum(0);
+					break;
+				}
+			}
+			//если в элементе что то было или мы туда что то притянули то пытаемя притянуть такой же
+			for (int j = i + dir; (dir < 0 ? j >= 0 : j < matrices[matrInd][rowInd].size()) && !done; j += dir)
+			{
+				if (matrices[matrInd][rowInd][j].tile->getNum() == num)
+				{
+					canMove = true;
+					if (!v)
+					{
+						matrices[matrInd][rowInd][i].tile->setNum(num * 2);
+						toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, true, StartParams.stepsPerSec / StartParams.speed));
+						matrices[matrInd][rowInd][j].tile->setNum(0);
+						score += num * 2;
+						break;
+					}
+					else
+					{
+						return true;
+					}
 				}
 				else
 				{
-					*isEnd = true;
-					return;
+					//первый доступный не такой же как текущий. притягивать можно только через нули
+					if (matrices[matrInd][rowInd][j].tile->getNum() != 0) break;
 				}
 			}
-			else
-			{
-				//первый доступный не такой же как текущий. притягивать можно только через нули
-				if (matrices[mi][ri][j].tile->getNum() != 0) break;
-			}
+			done = true;
 		}
-		done = true;
 	}
 
-	if (v) return; //анимация не нужна
+	//return canMove;
 
-
-
-	while (!toAnim.empty())
+	//анимация всех строк. я пытался считать каждую строку в отдельном потоке, но классы sfml не поддерживают многопоточность 
+	sf::RenderTexture texture;
+	sf::Sprite sp;
+	sp.setRotation(180);
+	texture.create(StartParams.w_x, StartParams.w_y);
+	while (toAnim.size() > 0)
 	{
+
 		for (int i = 0; i < toAnim.size(); i++)
 		{
 			toAnim[i].draw(texture);
@@ -396,14 +356,101 @@ void Game::moveRow(int mi, int ri, int dir, bool v, bool* isEnd, bool* canMove, 
 				i--;
 			}
 		}
-		done = done;
-		while (*stop)
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(100 / StartParams.stepsPerSec));
-		}
+		texture.display();
+		sp.setTexture(texture.getTexture());
+		window.draw(sp);
+		window.display();
+		//std::this_thread::sleep_for(std::chrono::milliseconds(1)); //переделать на таймер
 	}
-	*isEnd = true;
+
+	return canMove;
 }
+
+//void Game::moveRow(int mi, int ri, int dir, bool v, bool* isEnd, bool* canMove, sf::RenderTexture* texture, bool* stop)
+//{
+//	bool done = true;
+//	std::vector <AnimTile> toAnim; //сюда записываем данные для последующей анимации и изменения элементов
+//	for (int i = (dir > 0 ? 0 : matrices[matrInd][rowInd].size() - 1); (dir < 0 ? i >= 0 : i < matrices[matrInd][rowInd].size()); i + dir) //прямой или обратный перебор в зависимости от dir
+//	{
+//
+//		int num = matrices[matrInd][rowInd][i].tile->getNum();
+//		//если текущщий элемент пустой то пытаемся туда что то притянуть
+//		if (num == 0)
+//		{
+//			for (int j = i; (dir < 0 ? j >= 0 : j < matrices[matrInd][rowInd].size()); j += dir)
+//			{
+//				if (matrices[matrInd][rowInd][j].tile->getNum() != 0)
+//				{
+//					done = false;
+//					*canMove = true; //если v==false то это флаг что сдвиг был, если v==true то это только возможность сдвига
+//					if (!v)
+//					{
+//						num = matrices[matrInd][rowInd][j].tile->getNum();
+//						toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, false, StartParams.stepsPerSec / StartParams.speed));
+//						matrices[matrInd][rowInd][j].tile->setNum(0); //элемент который мы притянули сразу ставим 0 
+//					}
+//					else // при v==true достаточно чтобы хоть один сдвиг был возможен
+//					{
+//						*isEnd = true;
+//						return;
+//					}
+//				}
+//			}
+//			//текщий элемент 0 и ничего не притянули значит смещение завершено
+//			if (done)
+//			{
+//				break;
+//			}
+//		}
+//		//если в элементе что то было или мы туда что то притянули то пытаемя притянуть такой же
+//		for (int j = i; (dir < 0 ? j >= 0 : j < matrices[matrInd][rowInd].size()); j += dir)
+//		{
+//			if (matrices[matrInd][rowInd][j].tile->getNum() == num)
+//			{
+//				*canMove = true;
+//				if (!v)
+//				{
+//					toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, true, StartParams.stepsPerSec / StartParams.speed));
+//					matrices[matrInd][rowInd][j].tile->setNum(0);
+//				}
+//				else
+//				{
+//					*isEnd = true;
+//					return;
+//				}
+//			}
+//			else
+//			{
+//				//первый доступный не такой же как текущий. притягивать можно только через нули
+//				if (matrices[matrInd][rowInd][j].tile->getNum() != 0) break;
+//			}
+//		}
+//		done = true;
+//	}
+//
+//	if (v) return; //анимация не нужна
+//
+//
+//
+//	while (!toAnim.empty())
+//	{
+//		for (int i = 0; i < toAnim.size(); i++)
+//		{
+//			toAnim[i].draw(texture);
+//			if (toAnim[i].move()) //вернет true если движение закончилось
+//			{
+//				toAnim.erase(toAnim.begin() + i); //удаляем этот элемент
+//				i--;
+//			}
+//		}
+//		done = done;
+//		while (*stop)
+//		{
+//			std::this_thread::sleep_for(std::chrono::milliseconds(100 / StartParams.stepsPerSec));
+//		}
+//	}
+//	*isEnd = true;
+//}
 
 
 std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
@@ -484,9 +531,9 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 		{
 			//преобразование в прямоугольные координаты для точек в первой четверти текущего базиса k
 			Point recpoint = newbase(trans, points[i]);
+			Point recpoint1 = recpoint;
 			recpoint.x = int(recpoint.x * StartParams.range + StartParams.w_x / 2 - StartParams.r);
 			recpoint.y = int(-(recpoint.y * StartParams.range) + StartParams.w_y / 2 - StartParams.r);
-
 			Tile_point current
 			{
 				recpoint, points[i],
@@ -502,7 +549,7 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 				}
 				else
 				{
-					current.pointl = newbase(axistrans[j], recpoint); //преобразование из прямоугольных координат в координаты текущего базиса j
+					current.pointl = newbase(axistrans[j], recpoint1); //преобразование из прямоугольных координат в координаты текущего базиса j
 
 					//вычисляем ряд
 					int row;
@@ -527,6 +574,18 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 			std::sort(matrices[k][i].begin(), matrices[k][i].end(), Tp_compare);
 		}
 	}
+
+	//проверка матрицы
+	//int n = 3;
+	//for (int i = 0; i < matrices[n].size(); i++)
+	//{
+	//	for (int j = 0; j < matrices[n][i].size(); j++)
+	//	{
+	//		matrices[n][i][j].tile->setNum(pow(2, j));
+	//	}
+	//}
+
+
 	return matrices;
 }
 

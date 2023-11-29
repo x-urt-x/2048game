@@ -16,7 +16,6 @@ AnimTile::AnimTile(std::vector<Tile_point> _row, int _from, int _to, int _dir, i
 	tileToAnim = new Tile(pos);
 	tileToAnim->setNum(_num);
 	pos = row[from].pointr;
-
 }
 
 void AnimTile::calcStep()
@@ -67,7 +66,7 @@ void AnimTile::mergeAnim()
 {
 }
 
-void AnimTile::draw(sf::RenderTexture* texture)
+void AnimTile::draw(sf::RenderTexture& texture)
 {
 	tileToAnim->DrawTexture(texture);
 }

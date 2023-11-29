@@ -15,7 +15,7 @@ class AnimTile
 public:
 	AnimTile(std::vector<Tile_point> _row, int _from, int _to, int _dir, int num, bool megre, int _steps_between_tiles);
 	bool move();
-	void draw(sf::RenderTexture* texture);
+	void draw(sf::RenderTexture& texture);
 
 private:
 	void calcStep();

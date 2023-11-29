@@ -24,7 +24,7 @@ public:
     int getNum();
     void upNum();
     void Draw(sf::RenderWindow& window);
-    void DrawTexture(sf::RenderTexture* texture);
+    void DrawTexture(sf::RenderTexture& texture);
     static void setStaticParams(sf::Font _font, const StartParamsStruct& StartParams);
 private:
     int num = 0;

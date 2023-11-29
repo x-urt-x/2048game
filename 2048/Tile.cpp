@@ -81,16 +81,10 @@ void Tile::Draw(sf::RenderWindow& window)
     window.draw(text_num);
 }
 
-void Tile::DrawTexture(sf::RenderTexture* texture)
+void Tile::DrawTexture(sf::RenderTexture& texture)
 {
-    //sf::Image img;
-    //img.create(400, 400);
-    //const sf::Texture& tx = body.getTextureRect();
-    //texture->update(tx, 1000, 1000);
-    //
-    //sf::Texture::bind(texture);
-    texture->draw(body);
-    texture->draw(text_num);
+    texture.draw(body);
+    texture.draw(text_num);
 }
 
 void Tile::setStaticParams(sf::Font _font, const StartParamsStruct& StartParams)
