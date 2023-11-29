@@ -10,8 +10,12 @@
 #include "StartParams.h"
 #include <thread>
 #include <chrono>
-#include "AnimTile.h"
 
+struct Tile_point
+{
+	Point pointr, pointl;
+	Tile* tile;
+};
 
 class Game
 {
@@ -23,9 +27,7 @@ private:
 	void Render_GetZeros(std::vector<Tile_point*>& zeros);
 	void newTile(std::vector<std::vector<Tile_point>> matr);
 	bool move(int matrInd, int dir, bool v);
-	void moveRow(int mi, int ri, int dir, bool v, bool* isEnd, bool* canMove, sf::RenderTexture* texture, bool* stop);
 	std::vector<std::vector<std::vector<Tile_point>>> CreateMatrices();
-
 	static float* maketrans(float bases[]);
 	static Point newbase(float trans[], Point oldpoint);
 	
@@ -36,5 +38,7 @@ private:
 	sf::Text scores, msg;
 	sf::Font font;
 	int state, score = 0;
+	sf::Rect<int> field;
+	std::vector<sf::ConvexShape> arrows;
 };
 #endif

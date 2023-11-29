@@ -12,7 +12,16 @@ bool Tp_compare(const Tile_point& a, const Tile_point& b)
 	}
 }
 
-
+void setArrowPoints(sf::ConvexShape& arrow, int arrow_width)
+{
+	arrow.setPoint(0, sf::Vector2f(0, -0.06 * arrow_width));
+	arrow.setPoint(1, sf::Vector2f(0.6 * arrow_width, -0.06 * arrow_width));
+	arrow.setPoint(2, sf::Vector2f(0.6 * arrow_width, -0.2 * arrow_width));
+	arrow.setPoint(3, sf::Vector2f(arrow_width, 0));
+	arrow.setPoint(4, sf::Vector2f(0.6 * arrow_width, 0.2 * arrow_width));
+	arrow.setPoint(5, sf::Vector2f(0.6 * arrow_width, 0.06 * arrow_width));
+	arrow.setPoint(6, sf::Vector2f(0, 0.06 * arrow_width));
+}
 
 Game::Game(StartParamsStruct& _StartParams) : StartParams(_StartParams)
 {
@@ -21,15 +30,38 @@ Game::Game(StartParamsStruct& _StartParams) : StartParams(_StartParams)
 	font.loadFromFile("arial.ttf");
 	scores.setFont(font);
 	msg.setFont(font);
-	scores.setPosition(StartParams.w_x / 2 - StartParams.w_x / 10, StartParams.w_y / 20);
+	scores.setPosition(StartParams.w_x * 0.025, StartParams.w_y * 0.05);
 	msg.setPosition(StartParams.w_x / 20, StartParams.w_y / 2 - StartParams.w_y / 10);
 	scores.setCharacterSize(StartParams.w_y / 20);
+	scores.setString("0");
 	msg.setCharacterSize(StartParams.w_y / 5);
 	msg.setFillColor(sf::Color::Red);
+	msg.setString((sf::String)(""));
 	srand(time(NULL));
 	state = 0;
 	Tile::setStaticParams(font, StartParams);
 	matrices = CreateMatrices();
+	for (int i = 1; i <= StartParams.axis; i++)
+	{
+		{
+			sf::ConvexShape arrow(7);
+			setArrowPoints(arrow, StartParams.field.left * 0.5);
+			arrow.setRotation(-180.0 / StartParams.axis * i);
+			arrow.setPosition(
+				 StartParams.range * (StartParams.a - 0.5) * cos(3.14 / StartParams.axis * i) + StartParams.field.width / 2 + StartParams.field.left,
+				-StartParams.range * (StartParams.a - 0.5) * sin(3.14 / StartParams.axis * i) + StartParams.field.height / 2 + StartParams.field.top
+			);
+			arrows.push_back(arrow);
+		}
+		sf::ConvexShape arrow(7);
+		setArrowPoints(arrow, StartParams.field.left * 0.5);
+		arrow.setRotation(180 - 180.0 / StartParams.axis * i);
+		arrow.setPosition(
+			-StartParams.range * (StartParams.a - 0.5) * cos(3.14 / StartParams.axis * i) + StartParams.field.width / 2 + StartParams.field.left,
+			StartParams.range * (StartParams.a - 0.5) * sin(3.14 / StartParams.axis * i) + StartParams.field.height / 2 + StartParams.field.top
+		);
+		arrows.push_back(arrow);
+	}
 
 }
 
@@ -50,38 +82,44 @@ void Game::Render_GetZeros(std::vector<Tile_point*>& zeros)
 		}
 	}
 	window.draw(scores);
+	for (int i = 0; i < arrows.size(); i++)
+	{
+		window.draw(arrows[i]);
+	}
 }
 
 void Game::Run()
 {
-
-	bool moved = 0;
+	//sf::Vector2i cursorPos;
+	bool moved = false;
+	sf::Event event;
 
 	for (int i = 0; i < StartParams.spawn_s_q; i++)
 	{
 		newTile(matrices[0]);
 	}
-	//matrices[0][0][2].tile->setNum(2);
-	//matrices[0][0][4].tile->setNum(2);
-	//matrices[0][4][2].tile->setNum(2);
-	//window.clear(sf::Color(100, 100, 100));
+
+	window.clear(sf::Color(100, 100, 100));
 	std::vector<Tile_point*> zeros1;
 	Render_GetZeros(zeros1);
 
 
 	while (window.isOpen())
 	{
-
 		window.clear(sf::Color(100, 100, 100));
-
 		std::vector<Tile_point*> zeros;
 		Render_GetZeros(zeros);
+
+		sf::Time();
+		window.draw(msg);
 		if (moved)
 		{
+
 			for (int i = 0; i < StartParams.spawn_q && i < zeros.size(); i++)
 			{
 				newTile(matrices[0]);
 			}
+
 			if (StartParams.spawn_q > zeros.size())
 				state = 3;
 
@@ -97,26 +135,19 @@ void Game::Run()
 
 			if (state == 2)
 			{
-				msg.setString((sf::String)("you win"));
-				window.draw(msg);
-				window.display();
-				Sleep(5000);
-				msg.setString((sf::String)(""));
+				msg.setString((sf::String)("You win"));
 			}
 			if (state == 3)
 			{
-				msg.setString((sf::String)("you lose"));
-				window.draw(msg);
-				window.display();
-				Sleep(5000);
-				msg.setString((sf::String)(""));
+				msg.setString((sf::String)("Game over!"));
 			}
 
 			scores.setString(std::to_string(score));
-			moved = 0;
+			moved = false;
+
 		}
 
-		sf::Event event;
+
 		while (window.pollEvent(event))
 		{
 			switch (event.type)
@@ -128,7 +159,6 @@ void Game::Run()
 				// нажатие клавиши
 
 			case sf::Event::KeyPressed:
-				//if (!stop)
 			{
 				if (event.key.code == 78)
 				{
@@ -138,6 +168,17 @@ void Game::Run()
 				int key = event.key.code - 26;
 				if (key >= 0 && key < StartParams.axis * 2)
 					moved = move(key / 2, key % 2 == 0 ? -1 : 1, 0);
+			}
+			break;
+			case sf::Event::MouseButtonPressed:
+			{
+				for (int i = 0; i < arrows.size(); i++)
+				{
+					sf::FloatRect arrow = arrows[i].getGlobalBounds();
+					sf::Vector2i mouse = sf::Mouse::getPosition(window);
+					if (mouse.x > arrow.left && mouse.x < arrow.left + arrow.width && mouse.y > arrow.top && mouse.y < arrow.top + arrow.height)
+						moved = move(i / 2, i % 2 == 0 ? -1 : 1, 0);
+				}
 			}
 			break;
 			default:
@@ -201,98 +242,29 @@ Point Game::newbase(float trans[], Point oldpoint)
 	return newpoint;
 }
 
-//int Game::move(std::vector<std::vector<Tile_point>> matr, int dir, bool v)
-//{
-//	int moved = 0;
-//	std::vector<int> ind;
-//	for (int i = 0; i < matr.size(); i++) { ind.push_back(i); }
-//	for (int i = 0; ind.size() > 0; i++)
-//	{
-//		for (int j = 0; j < ind.size(); j++)
-//		{
-//			int i_w = dir == 1 ? i : matr[ind[j]].size() - i - 1;
-//			bool flag_c = false;
-//			int num = matr[ind[j]][i_w].tile->getNum();
-//			int k_max = matr[ind[j]].size();
-//			if (num == 0)
-//			{
-//				for (int k = i_w + dir; dir == 1 ? k < k_max : k >= 0; k += dir)
-//				{
-//					if (matr[ind[j]][k].tile->getNum() != 0)
-//					{
-//						moved = 1;
-//						if (!v)
-//						{
-//							matr[ind[j]][i_w].tile->setNum(matr[ind[j]][k].tile->getNum());
-//							matr[ind[j]][k].tile->setNum(0);
-//							num = matr[ind[j]][i_w].tile->getNum();
-//							break;
-//						}
-//					}
-//					if (((k == k_max - 1) && (dir == 1)) || ((dir == -1) && (k == 0)))
-//					{
-//						ind.erase(ind.begin() + j);
-//						j--;
-//						flag_c = true;
-//						break;
-//					}
-//				}
-//			}
-//			for (int k = i_w + dir; (dir == 1 ? k < k_max : k >= 0) and !flag_c; k += dir)
-//			{
-//				if (matr[ind[j]][k].tile->getNum() == num)
-//				{
-//					moved = 1;
-//					if (!v)
-//					{
-//						matr[ind[j]][k].tile->setNum(0);
-//						matr[ind[j]][i_w].tile->setNum(num * 2);
-//						score += num * 2;
-//						break;
-//					}
-//				}
-//				else
-//				{
-//					if (matr[ind[j]][k].tile->getNum() != 0) break;
-//				}
-//			}
-//			if (((i_w == k_max - 1) && (dir == 1)) || ((dir == -1) && (i_w == 0)))
-//			{
-//				ind.erase(ind.begin() + j);
-//				j--;
-//			}
-//		}
-//	}
-//	return moved;
-//}
-
-
 bool Game::move(int matrInd, int dir, bool v)
 {
-
-	bool canMove = false;
-	std::vector <AnimTile> toAnim; //сюда записываем данные для последующей анимации и изменения элементов
+	bool moved = false;
 	for (int rowInd = 0; rowInd < matrices[matrInd].size(); rowInd++)
 	{
-		bool done = true;
 		for (int i = (dir > 0 ? 0 : matrices[matrInd][rowInd].size() - 1); (dir < 0 ? i >= 0 : i < matrices[matrInd][rowInd].size()); i += dir) //прямой или обратный перебор в зависимости от dir
 		{
-
+			bool done = false;
 			int num = matrices[matrInd][rowInd][i].tile->getNum();
 			//если текущий элемент пустой то пытаемся туда что то притянуть
 			if (num == 0)
 			{
+				done = true;
 				for (int j = i; (dir < 0 ? j >= 0 : j < matrices[matrInd][rowInd].size()); j += dir)
 				{
 					if (matrices[matrInd][rowInd][j].tile->getNum() != 0)
 					{
-						canMove = true; //флаг что сдвиг был
+						moved = true; //флаг что сдвиг был
 						if (!v)
 						{
 							done = false;
 							num = matrices[matrInd][rowInd][j].tile->getNum();
 							matrices[matrInd][rowInd][i].tile->setNum(num);
-							toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, false, StartParams.stepsPerSec / StartParams.speed));
 							matrices[matrInd][rowInd][j].tile->setNum(0); //элемент который мы притянули сразу ставим 0 
 							break;
 						}
@@ -313,11 +285,10 @@ bool Game::move(int matrInd, int dir, bool v)
 			{
 				if (matrices[matrInd][rowInd][j].tile->getNum() == num)
 				{
-					canMove = true;
+					moved = true;
 					if (!v)
 					{
 						matrices[matrInd][rowInd][i].tile->setNum(num * 2);
-						toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, true, StartParams.stepsPerSec / StartParams.speed));
 						matrices[matrInd][rowInd][j].tile->setNum(0);
 						score += num * 2;
 						break;
@@ -336,121 +307,8 @@ bool Game::move(int matrInd, int dir, bool v)
 			done = true;
 		}
 	}
-
-	//return canMove;
-
-	//анимация всех строк. я пытался считать каждую строку в отдельном потоке, но классы sfml не поддерживают многопоточность 
-	sf::RenderTexture texture;
-	sf::Sprite sp;
-	sp.setRotation(180);
-	texture.create(StartParams.w_x, StartParams.w_y);
-	while (toAnim.size() > 0)
-	{
-
-		for (int i = 0; i < toAnim.size(); i++)
-		{
-			toAnim[i].draw(texture);
-			if (toAnim[i].move()) //вернет true если движение закончилось
-			{
-				toAnim.erase(toAnim.begin() + i); //удаляем этот элемент
-				i--;
-			}
-		}
-		texture.display();
-		sp.setTexture(texture.getTexture());
-		window.draw(sp);
-		window.display();
-		//std::this_thread::sleep_for(std::chrono::milliseconds(1)); //переделать на таймер
-	}
-
-	return canMove;
+	return moved;
 }
-
-//void Game::moveRow(int mi, int ri, int dir, bool v, bool* isEnd, bool* canMove, sf::RenderTexture* texture, bool* stop)
-//{
-//	bool done = true;
-//	std::vector <AnimTile> toAnim; //сюда записываем данные для последующей анимации и изменения элементов
-//	for (int i = (dir > 0 ? 0 : matrices[matrInd][rowInd].size() - 1); (dir < 0 ? i >= 0 : i < matrices[matrInd][rowInd].size()); i + dir) //прямой или обратный перебор в зависимости от dir
-//	{
-//
-//		int num = matrices[matrInd][rowInd][i].tile->getNum();
-//		//если текущщий элемент пустой то пытаемся туда что то притянуть
-//		if (num == 0)
-//		{
-//			for (int j = i; (dir < 0 ? j >= 0 : j < matrices[matrInd][rowInd].size()); j += dir)
-//			{
-//				if (matrices[matrInd][rowInd][j].tile->getNum() != 0)
-//				{
-//					done = false;
-//					*canMove = true; //если v==false то это флаг что сдвиг был, если v==true то это только возможность сдвига
-//					if (!v)
-//					{
-//						num = matrices[matrInd][rowInd][j].tile->getNum();
-//						toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, false, StartParams.stepsPerSec / StartParams.speed));
-//						matrices[matrInd][rowInd][j].tile->setNum(0); //элемент который мы притянули сразу ставим 0 
-//					}
-//					else // при v==true достаточно чтобы хоть один сдвиг был возможен
-//					{
-//						*isEnd = true;
-//						return;
-//					}
-//				}
-//			}
-//			//текщий элемент 0 и ничего не притянули значит смещение завершено
-//			if (done)
-//			{
-//				break;
-//			}
-//		}
-//		//если в элементе что то было или мы туда что то притянули то пытаемя притянуть такой же
-//		for (int j = i; (dir < 0 ? j >= 0 : j < matrices[matrInd][rowInd].size()); j += dir)
-//		{
-//			if (matrices[matrInd][rowInd][j].tile->getNum() == num)
-//			{
-//				*canMove = true;
-//				if (!v)
-//				{
-//					toAnim.push_back(AnimTile(matrices[matrInd][rowInd], j, i, dir, num, true, StartParams.stepsPerSec / StartParams.speed));
-//					matrices[matrInd][rowInd][j].tile->setNum(0);
-//				}
-//				else
-//				{
-//					*isEnd = true;
-//					return;
-//				}
-//			}
-//			else
-//			{
-//				//первый доступный не такой же как текущий. притягивать можно только через нули
-//				if (matrices[matrInd][rowInd][j].tile->getNum() != 0) break;
-//			}
-//		}
-//		done = true;
-//	}
-//
-//	if (v) return; //анимация не нужна
-//
-//
-//
-//	while (!toAnim.empty())
-//	{
-//		for (int i = 0; i < toAnim.size(); i++)
-//		{
-//			toAnim[i].draw(texture);
-//			if (toAnim[i].move()) //вернет true если движение закончилось
-//			{
-//				toAnim.erase(toAnim.begin() + i); //удаляем этот элемент
-//				i--;
-//			}
-//		}
-//		done = done;
-//		while (*stop)
-//		{
-//			std::this_thread::sleep_for(std::chrono::milliseconds(100 / StartParams.stepsPerSec));
-//		}
-//	}
-//	*isEnd = true;
-//}
 
 
 std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
@@ -532,8 +390,8 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 			//преобразование в прямоугольные координаты для точек в первой четверти текущего базиса k
 			Point recpoint = newbase(trans, points[i]);
 			Point recpoint1 = recpoint;
-			recpoint.x = int(recpoint.x * StartParams.range + StartParams.w_x / 2 - StartParams.r);
-			recpoint.y = int(-(recpoint.y * StartParams.range) + StartParams.w_y / 2 - StartParams.r);
+			recpoint.x = int(recpoint.x * StartParams.range + StartParams.field.width / 2 + StartParams.field.left - StartParams.r);
+			recpoint.y = int(-(recpoint.y * StartParams.range) + StartParams.field.height / 2 + StartParams.field.top - StartParams.r);
 			Tile_point current
 			{
 				recpoint, points[i],
@@ -576,7 +434,7 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 	}
 
 	//проверка матрицы
-	//int n = 3;
+	//int n = 1;
 	//for (int i = 0; i < matrices[n].size(); i++)
 	//{
 	//	for (int j = 0; j < matrices[n][i].size(); j++)
@@ -588,4 +446,5 @@ std::vector<std::vector<std::vector<Tile_point>>> Game::CreateMatrices()
 
 	return matrices;
 }
+
 
