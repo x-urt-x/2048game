@@ -10,7 +10,7 @@ to flexibly configure the field structure and initial conditions.
 ---
 
 ## ⚙️ Launch Parameters
-
+```json
 {
   "w_x": 1920,           // window width
   "w_y": 1080,           // window height
@@ -23,7 +23,7 @@ to flexibly configure the field structure and initial conditions.
   "base": 5,             // base value of a tile
   "max_degree": 7        // maximum merge degree
 }
-
+```
 🔹 **Shift axis** refers to a direction along which tiles can move across the field.  
 The `axis` parameter defines the number of such directions and determines the overall field geometry.  
 There are no restrictions on parity; the minimum valid value is 2.
